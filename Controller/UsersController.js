@@ -9,7 +9,20 @@ const config = require('./../config')
 
 exports.getAllUsers = (req, res) => {
 
-    db.query('SELECT `id`, `name`, `second_name`, `email` FROM `users`', (error, rows, fields) => {
+    db.query('SELECT id, name, second_name, email, (SELECT name FROM roles WHERE id = users.role_id) as role_name FROM users', (error, rows, fields) => {
+        if(error) {
+            response.status(400, error, res)
+        } else {
+            response.status(200, rows, res)
+        }
+    })
+
+}
+
+exports.getUser = (req, res) => {
+    const token = req.headers.authorization.split(' ')[1]
+    const data = jwt.verify(token, config.jwt)
+    db.query(`SELECT id, name, second_name, email, (SELECT name FROM roles WHERE id = users.role_id) as role_name FROM users WHERE id = ${data.userId}`, (error, rows, fields) => {
         if(error) {
             response.status(400, error, res)
         } else {
@@ -31,19 +44,24 @@ exports.signup = (req, res) => {
                 return true
             })
         } else {
-            const email = req.body.email
-            const name = req.body.name
-            const secondName = req.body.second_name !== '' ? req.body.second_name : 'Не указано'
+            const { email, name, password, secondName = 'Не указано' } = req.body
+            // const email = req.body.email
+            // const name = req.body.name
+            // const secondName = req.body.second_name !== '' ? req.body.second_name : 'Не указано'
 
-            const salt = bcrypt.genSaltSync(15)
-            const password = bcrypt.hashSync(req.body.password, salt)
+            const salt = bcrypt.genSaltSync(7)
+            const passwordEncrypted = bcrypt.hashSync(password, salt)
 
-            const sql = "INSERT INTO `users`(`name`, `second_name`, `email`, `password`) VALUES('" + name + "', '" + secondName + "', '" + email + "', '" + password + "')";
+            const sql = "INSERT INTO `users`(`name`, `second_name`, `email`, `password`) VALUES('" + name + "', '" + secondName + "', '" + email + "', '" + passwordEncrypted + "')";
             db.query(sql, (error, results) => {
                 if(error) {
                     response.status(400, error, res)
                 } else {
-                    response.status(200, {message: `Регистрация прошла успешно.`, results}, res)
+                    const token = jwt.sign({
+                        userId: results.insertId,
+                        email: email
+                    }, config.jwt, { expiresIn: 120 * 120 })
+                    response.status(200, {message: `Регистрация прошла успешно.`, results, token}, res)
                 }
             })
 
@@ -53,6 +71,7 @@ exports.signup = (req, res) => {
 }
 
 exports.signin = (req, res) => {
+    console.log(req.body);
 
     db.query("SELECT `id`, `email`, `password` FROM `users` WHERE `email` = '" + req.body.email + "'", (error, rows, fields) => {
         if(error) {

@@ -3,7 +3,7 @@ const config = require('../config')
 
 const connection = mysql.createConnection({
     host: config.HOST,
-    socketPath: config.SOCKET,
+    // socketPath: config.SOCKET,
     port: config.PORT,
     user: config.DBUSER,
     password: config.DBPASSWORD,
@@ -12,7 +12,7 @@ const connection = mysql.createConnection({
 
 connection.connect((error) => {
     if(error) {
-        return console.log('Ошибка подключения к БД!');
+        return console.log('Ошибка подключения к БД!', error);
     } else {
         return console.log('Подлючение успешно!');
     }

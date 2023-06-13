@@ -26,8 +26,16 @@ module.exports = (app) => {
     );
 
   app.route("/api/products").get(postsController.getProducts);
+  
+  app.route("/api/products").post(postsController.addProduct);
+  
+  app.route("/api/delete-product").post(postsController.deleteProduct);
+  
+  app.route("/api/delete-category").post(postsController.deleteCategory);
 
   app.route("/api/product-groups").get(postsController.getProductGroups);
+
+  app.route("/api/product-groups").post(postsController.addProductGroups);
 
   app
     .route("/api/all-orders")
